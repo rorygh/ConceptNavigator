@@ -1,0 +1,10 @@
+anthropic
+sentence-transformers
+chromadb
+networkx
+fastapi
+uvicorn[standard]
+pydantic
+requests
+beautifulsoup4
+python-dotenv
