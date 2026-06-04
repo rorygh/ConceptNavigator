@@ -46,15 +46,17 @@ Suggested Learning Path
 
 ```
 ConceptNavigator/
-├── ingest/          # Fetch + parse MIT catalog, generate embeddings
-│   ├── fetch_mit.py     # Pulls all courses from FireRoad API → data/courses_raw.json
-│   └── parse_courses.py # Validates schema, parses prereq trees → data/courses.json
-├── retrieval/       # Vector search + graph traversal
-├── llm/             # Topic extraction, path generation, explanations
-├── api/             # FastAPI app
+├── ingest/
+│   ├── fetch_mit.py       # Pulls all courses from FireRoad API → data/courses_raw.json
+│   ├── parse_courses.py   # Validates schema, parses prereq trees → data/courses.json
+│   └── embed_courses.py   # Embeds title+description → data/chroma/ (ChromaDB)
+├── retrieval/             # Vector search + graph traversal (next)
+├── llm/                   # Topic extraction, path generation, explanations
+├── api/                   # FastAPI app
 └── data/
-    ├── courses_raw.json  # Raw API response (7,083 courses; 65 dropped for missing description)
-    └── courses.json      # Validated, schema-conformant courses with parsed prerequisite trees
+    ├── courses_raw.json   # Raw API response (7,083 courses; 65 dropped for missing description)
+    ├── courses.json       # Validated courses with parsed AND/OR prerequisite trees
+    └── chroma/            # ChromaDB vector store (7,083 embeddings, 384-dim)
 ```
 
 ## RunPod Deployment
@@ -84,11 +86,12 @@ cd /workspace/ConceptNavigator
 
 ## Data pipeline
 
-The ingest pipeline runs in two steps:
+The ingest pipeline runs in three steps:
 
 ```bash
 python -m ingest.fetch_mit      # fetch raw catalog from FireRoad API
 python -m ingest.parse_courses  # validate schema + parse prerequisite trees
+python -m ingest.embed_courses  # embed title+description → ChromaDB
 ```
 
 **`fetch_mit.py`** hits `GET /courses/all?full=true` on the FireRoad API and writes a flat JSON array. It filters out courses with no description (65 of 7,148). Fields retained: `subject_id`, `title`, `description`, `prerequisites`, `total_units`, `level`, `related_subjects`, `rating`, `url`, `instructors`, `schedule`.
@@ -109,10 +112,34 @@ python -m ingest.parse_courses  # validate schema + parse prerequisite trees
 
 Special tokens (`GIR:XXX`, `''permission of instructor''`) are preserved as leaf strings in the tree.
 
+**`embed_courses.py`** embeds each course's `title + description` using `sentence-transformers` (`all-MiniLM-L6-v2`, runs locally) and stores the vectors in a persistent ChromaDB collection at `data/chroma/`. Embedding 7,083 courses takes ~4 seconds on CPU.
+
+Example semantic search results (no keyword matching — pure vector similarity):
+
+```
+Query: "I want to learn about robotics and self-driving cars"
+  [16.405] Robotics: Science and Systems — Presents concepts, principles, and algorithmic foundations for robots and autonomous vehicles...
+  [2.12]   Introduction to Robotics — Unified introduction to kinematics, dynamics, control, and motion planning...
+  [16.412] Cognitive Robotics — Principles of knowledge representation, inference, and learning applied to robotics...
+
+Query: "how do computers learn from data"
+  [6.7900] Machine Learning — Principles, techniques, and algorithms in machine learning from the point of view of statistical inference...
+  [6.3800] Introduction to Inference — Introduces probabilistic modeling for problems of inference and machine learning from data...
+  [9.54]   Computational Aspects of Biological Learning — Takes a computational approach to learning in the brain by neurons and synapses...
+
+Query: "understanding the human brain and neuroscience"
+  [9.11]    The Human Brain — Surveys the core perceptual and cognitive abilities of the human mind...
+  [9.13]    The Human Brain — Cross-listed version covering how these abilities are implemented in the brain...
+  [HST.130] Neuroscience — Comprehensive study from molecules and cells to systems and behavior...
+```
+
+Note: MIT cross-lists many courses across departments (same content, different IDs). Deduplication is handled at the retrieval layer.
+
 | Step | Input | Output | Courses |
 |------|-------|--------|---------|
 | fetch | FireRoad API | `courses_raw.json` | 7,083 |
 | parse | `courses_raw.json` | `courses.json` | 7,083 (0 errors) |
+| embed | `courses.json` | `data/chroma/` | 7,083 vectors |
 
 ## Local development
 
