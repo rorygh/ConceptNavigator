@@ -186,7 +186,7 @@ def courses():
             "title": c["title"],
             "units": c["units"],
             "level": c.get("level"),
-            "dept":  c["id"].split(".")[0],
+            "dept":  c.get("dept") or c["id"].split(".")[0],
         }
         for c in _all_courses()
     ]

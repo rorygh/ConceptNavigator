@@ -1,0 +1,77 @@
+{
+  "schools": [
+    {
+      "name": "School of Architecture and Planning",
+      "departments": ["4", "MAS", "11"]
+    },
+    {
+      "name": "School of Engineering",
+      "departments": ["16", "20", "10", "1", "6", "HST", "3", "2", "22"]
+    },
+    {
+      "name": "School of Humanities, Arts, and Social Sciences",
+      "departments": ["21A", "CMS", "21W", "14", "21G", "21H", "21", "24", "21L", "21M", "17", "STS"]
+    },
+    {
+      "name": "Sloan School of Management",
+      "departments": ["15"]
+    },
+    {
+      "name": "School of Science",
+      "departments": ["7", "9", "5", "12", "18", "8"]
+    },
+    {
+      "name": "MIT Schwarzman College of Computing",
+      "departments": ["IDS", "6"]
+    }
+  ],
+  "departments": {
+    "1":   { "name": "Civil and Environmental Engineering" },
+    "2":   { "name": "Mechanical Engineering" },
+    "3":   { "name": "Materials Science and Engineering" },
+    "4":   { "name": "Architecture" },
+    "5":   { "name": "Chemistry" },
+    "6":   { "name": "Electrical Engineering and Computer Science" },
+    "7":   { "name": "Biology" },
+    "8":   { "name": "Physics" },
+    "9":   { "name": "Brain and Cognitive Sciences" },
+    "10":  { "name": "Chemical Engineering" },
+    "11":  { "name": "Urban Studies and Planning" },
+    "12":  { "name": "Earth, Atmospheric, and Planetary Sciences" },
+    "14":  { "name": "Economics" },
+    "15":  { "name": "Management" },
+    "16":  { "name": "Aeronautics and Astronautics" },
+    "17":  { "name": "Political Science" },
+    "18":  { "name": "Mathematics" },
+    "20":  { "name": "Biological Engineering" },
+    "21":  { "name": "Humanities" },
+    "21A": { "name": "Anthropology" },
+    "21G": { "name": "Global Languages" },
+    "21H": { "name": "History" },
+    "21L": { "name": "Literature" },
+    "21M": { "name": "Music and Theater Arts" },
+    "21T": { "name": "Theater Arts" },
+    "21W": { "name": "Writing" },
+    "22":  { "name": "Nuclear Science and Engineering" },
+    "24":  { "name": "Linguistics and Philosophy" },
+    "AS":  { "name": "Air Force ROTC" },
+    "CC":  { "name": "Concourse" },
+    "CMS": { "name": "Comparative Media Studies" },
+    "CSB": { "name": "Computational and Systems Biology" },
+    "CSE": { "name": "Computational Science and Engineering" },
+    "EC":  { "name": "Edgerton Center" },
+    "EM":  { "name": "Engineering Management" },
+    "ES":  { "name": "Experimental Study Group" },
+    "HST": { "name": "Health Sciences and Technology" },
+    "IDS": { "name": "Data, Systems, and Society" },
+    "MAD": { "name": "Design" },
+    "MAS": { "name": "Media Arts and Sciences" },
+    "MS":  { "name": "Army ROTC" },
+    "NS":  { "name": "Naval Science" },
+    "SCM": { "name": "Supply Chain Management" },
+    "SP":  { "name": "Special Programs" },
+    "STS": { "name": "Science, Technology, and Society" },
+    "SWE": { "name": "Software Engineering" },
+    "WGS": { "name": "Women's and Gender Studies" }
+  }
+}

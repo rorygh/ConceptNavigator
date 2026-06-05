@@ -3,6 +3,14 @@ from pathlib import Path
 from typing import Union, Literal
 from pydantic import BaseModel
 
+DEPT_PATH = Path(__file__).parent / "departments.json"
+_DEPT_DATA = json.loads(DEPT_PATH.read_text())
+DEPARTMENTS: dict[str, dict] = _DEPT_DATA["departments"]
+
+
+def _dept_from_id(course_id: str) -> str:
+    return course_id.split(".")[0]
+
 
 # --- Prerequisite tree ---
 
@@ -31,6 +39,7 @@ class Course(BaseModel):
     description: str
     units: int
     level: str | None = None
+    dept: str = ""
     prerequisites: PrereqNode | None = None
     related_subjects: list[str] = []
     rating: float | None = None
@@ -119,12 +128,14 @@ def parse():
     courses, errors = [], 0
     for r in raw:
         try:
+            subject_id = r["subject_id"]
             course = Course(
-                id=r["subject_id"],
+                id=subject_id,
                 title=r["title"],
                 description=r["description"],
                 units=r["total_units"],
                 level=r.get("level"),
+                dept=_dept_from_id(subject_id),
                 prerequisites=parse_prereqs(r.get("prerequisites", "")),
                 related_subjects=r.get("related_subjects", []),
                 rating=r.get("rating"),

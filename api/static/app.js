@@ -673,7 +673,7 @@ const DEPT_NAMES = {
   '21':'Humanities','21A':'Anthropology','21G':'Global Languages',
   '21H':'History','21L':'Literature','21M':'Music & Theater Arts',
   '21T':'Theater Arts','21W':'Writing',
-  '22':'Nuclear Sci. & Eng.','24':'Philosophy',
+  '22':'Nuclear Sci. & Eng.','24':'Linguistics & Philosophy',
   'AS':'Air Force ROTC','CC':'Concourse',
   'CMS':'Comparative Media Studies','CSB':'Computational Systems Bio.',
   'CSE':'Computational Sci. & Eng.','EC':'Edgerton Center',
