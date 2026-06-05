@@ -738,11 +738,19 @@ function drawEdges() {
   }
 }
 
+function nodeVisible(n) {
+  if (filterHitIds.size === 0) return true;
+  if (filterHitIds.has(n.id)) return true;
+  // In SELECTED view always show the focal course, its prereqs, and successors
+  return VIEW === 'SELECTED' && (prereqDepths.has(n.id) || selSuccIds.has(n.id));
+}
+
 function drawNodes() {
   // Batch circles by (color, radius) to minimise ctx.fill() calls
   const groups = new Map();
   nodes.forEach(n => {
     if (!isFinite(n.x) || !isFinite(n.y)) return;
+    if (!nodeVisible(n)) return;
     const r = nodeR(n), c = nodeColor(n);
     const key = c + '|' + r;
     if (!groups.has(key)) groups.set(key, { c, r, list: [] });
@@ -912,7 +920,8 @@ function simXY(ev) { return T.invert([ev.clientX, ev.clientY]); }
 canvas.addEventListener('mousemove', ev => {
   if (!qt) return;
   const [mx, my] = simXY(ev);
-  const found = qt.find(mx, my, 50 / T.k);
+  const candidate = qt.find(mx, my, 50 / T.k);
+  const found = candidate && nodeVisible(candidate) ? candidate : null;
   if (found !== hovered) { hovered = found; draw(); if (found) prefetchSimilarity(found.id); }
   found ? showTip(ev, found) : hideTip();
 });
@@ -921,7 +930,7 @@ canvas.addEventListener('click', ev => {
   if (!qt) return;
   const [mx, my] = simXY(ev);
   const n = qt.find(mx, my, 20 / T.k);
-  if (n) { openDetail(n.id); startSelected(n.id); }
+  if (n && nodeVisible(n)) { openDetail(n.id); startSelected(n.id); }
 });
 
 canvas.addEventListener('mouseleave', () => { hovered = null; hideTip(); draw(); });
