@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KnowledgeAtlas</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0d1117;
+      --border:   rgba(255,255,255,0.07);
+      --text:     #e6edf3;
+      --muted:    #7d8590;
+      --accent:   #4f8ef7;
+      --node-fill:   rgba(79,142,247,0.10);
+      --node-stroke: rgba(79,142,247,0.55);
+      --node-hover:  rgba(79,142,247,0.25);
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--text); overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
+
+    #canvas { position: fixed; inset: 0; width: 100%; height: 100%; }
+
+    /* ── Logo ── */
+    #logo {
+      position: fixed; top: 24px; left: 28px;
+      font-size: 14px; font-weight: 600; letter-spacing: 0.03em;
+      color: var(--muted); pointer-events: none; user-select: none;
+    }
+
+    /* ── Empty state ── */
+    #hint {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -60%);
+      text-align: center; pointer-events: none;
+      transition: opacity 0.5s;
+    }
+    #hint h2 { font-size: 24px; font-weight: 500; margin-bottom: 10px; }
+    #hint p  { font-size: 14px; color: var(--muted); }
+
+    /* ── Search bar ── */
+    #search-bar {
+      position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+      width: min(580px, calc(100vw - 40px));
+      background: rgba(22,27,34,0.88);
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px 10px 10px 18px;
+      display: flex; align-items: center; gap: 10px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    }
+    #search-input {
+      flex: 1; background: none; border: none; outline: none;
+      color: var(--text); font-size: 15px; caret-color: var(--accent);
+    }
+    #search-input::placeholder { color: var(--muted); }
+    #search-btn {
+      background: var(--accent); color: #fff; border: none;
+      width: 34px; height: 34px; border-radius: 9px;
+      cursor: pointer; font-size: 17px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity 0.15s;
+    }
+    #search-btn:hover { opacity: 0.8; }
+    #search-btn.loading { opacity: 0.5; cursor: default; }
+
+    /* ── Tooltip ── */
+    #tooltip {
+      position: fixed; max-width: 280px; z-index: 200;
+      background: rgba(18,22,30,0.96); border: 1px solid var(--border);
+      border-radius: 11px; padding: 14px 16px;
+      font-size: 13px; pointer-events: none;
+      opacity: 0; transition: opacity 0.12s;
+    }
+    #tooltip .t-id    { color: var(--accent); font-size: 11px; font-weight: 700; margin-bottom: 5px; }
+    #tooltip .t-title { font-weight: 600; line-height: 1.35; margin-bottom: 7px; }
+    #tooltip .t-desc  { color: var(--muted); font-size: 12px; line-height: 1.55; }
+    #tooltip .t-meta  { color: var(--muted); font-size: 11px; margin-top: 8px; border-top: 1px solid var(--border); padding-top: 7px; }
+
+    /* ── SVG node styles ── */
+    .node-circle {
+      fill: var(--node-fill); stroke: var(--node-stroke); stroke-width: 1.5;
+      cursor: pointer; transition: fill 0.2s, stroke 0.2s;
+    }
+    .node-circle:hover { fill: var(--node-hover); stroke: rgba(79,142,247,0.9); }
+    .node-label { fill: var(--text); font-size: 11.5px; font-weight: 500;
+      text-anchor: middle; pointer-events: none; }
+    .node-id    { fill: var(--accent); font-size: 10px; font-weight: 700;
+      text-anchor: middle; pointer-events: none; }
+  </style>
+</head>
+<body>
+
+<div id="logo">KnowledgeAtlas</div>
+
+<div id="hint">
+  <h2>What do you want to learn?</h2>
+  <p>Type a goal below to explore MIT courses.</p>
+</div>
+
+<svg id="canvas"></svg>
+
+<div id="tooltip">
+  <div class="t-id"   id="tt-id"></div>
+  <div class="t-title" id="tt-title"></div>
+  <div class="t-desc"  id="tt-desc"></div>
+  <div class="t-meta"  id="tt-meta"></div>
+</div>
+
+<div id="search-bar">
+  <input id="search-input" type="text" placeholder="What do you want to learn?" autocomplete="off" spellcheck="false" />
+  <button id="search-btn">↵</button>
+</div>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+const W = () => window.innerWidth;
+const H = () => window.innerHeight;
+
+const svg  = d3.select('#canvas').attr('viewBox', `0 0 ${W()} ${H()}`);
+const root = svg.append('g');  // all nodes live here; zoom transforms this
+
+// ── Zoom ─────────────────────────────────────────────────────────────────
+const zoom = d3.zoom().scaleExtent([0.15, 4]).on('zoom', ev => {
+  root.attr('transform', ev.transform);
+  const k = ev.transform.k;
+  // Collapse labels to dots below a threshold
+  root.selectAll('.node-label').style('display', k < 0.45 ? 'none' : null);
+  root.selectAll('.node-id').style('display',    k < 0.6  ? 'none' : null);
+});
+svg.call(zoom).on('dblclick.zoom', null);
+
+// ── State ─────────────────────────────────────────────────────────────────
+let sim = null;
+
+// ── Render ─────────────────────────────────────────────────────────────────
+function render(courses) {
+  document.getElementById('hint').style.opacity = '0';
+
+  if (sim) sim.stop();
+
+  const R = 54;  // node radius
+
+  // Seed new nodes near centre so they don't fly in from off-screen
+  const nodes = courses.map(c => ({
+    ...c,
+    x: W() / 2 + (Math.random() - 0.5) * 120,
+    y: H() / 2 + (Math.random() - 0.5) * 120,
+  }));
+
+  // ── Node groups ──
+  const node = root.selectAll('.node')
+    .data(nodes, d => d.id)
+    .join(
+      enter => {
+        const g = enter.append('g').attr('class', 'node')
+          .attr('transform', d => `translate(${d.x},${d.y})`);
+
+        // Circle — animate in from r=0
+        g.append('circle').attr('class', 'node-circle').attr('r', 0)
+          .transition().duration(450).ease(d3.easeBackOut).attr('r', R);
+
+        // Course ID above centre
+        g.append('text').attr('class', 'node-id').attr('y', -R * 0.35)
+          .text(d => d.id);
+
+        // Title — simple two-line wrap
+        g.each(function(d) {
+          const el = d3.select(this);
+          const words = d.title.split(' ');
+          const maxPx = R * 1.65;
+          const lines = [];
+          let cur = '';
+          words.forEach(w => {
+            const test = cur ? cur + ' ' + w : w;
+            if (test.length * 6.2 > maxPx && cur) { lines.push(cur); cur = w; }
+            else cur = test;
+          });
+          if (cur) lines.push(cur);
+          // Center block vertically
+          const lh = 14, total = (lines.length - 1) * lh;
+          lines.forEach((line, i) => {
+            el.append('text').attr('class', 'node-label')
+              .attr('y', R * 0.1 - total / 2 + i * lh)
+              .text(line);
+          });
+        });
+
+        // Interactions
+        g.call(d3.drag()
+          .on('start', (ev, d) => { if (!ev.active) sim.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+          .on('drag',  (ev, d) => { d.fx = ev.x; d.fy = ev.y; })
+          .on('end',   (ev, d) => { if (!ev.active) sim.alphaTarget(0); d.fx = null; d.fy = null; }));
+
+        g.on('mouseover', showTip)
+         .on('mousemove', moveTip)
+         .on('mouseout',  hideTip);
+
+        return g;
+      },
+      update => update,
+      exit => {
+        exit.select('circle').transition().duration(250).attr('r', 0);
+        exit.transition().delay(240).remove();
+      }
+    );
+
+  // ── Simulation ──
+  sim = d3.forceSimulation(nodes)
+    .force('charge',    d3.forceManyBody().strength(-380))
+    .force('center',    d3.forceCenter(W() / 2, H() / 2 - 40))
+    .force('collision', d3.forceCollide(R + 18))
+    .on('tick', () => {
+      root.selectAll('.node').attr('transform', d => `translate(${d.x},${d.y})`);
+    });
+
+  // Reset zoom so everything is visible
+  svg.transition().duration(600)
+    .call(zoom.transform, d3.zoomIdentity);
+}
+
+// ── Tooltip ──────────────────────────────────────────────────────────────
+function showTip(ev, d) {
+  Object.assign(document.getElementById('tt-id'),    { textContent: d.id });
+  Object.assign(document.getElementById('tt-title'), { textContent: d.title });
+  const desc = d.description.length > 220 ? d.description.slice(0, 220) + '…' : d.description;
+  Object.assign(document.getElementById('tt-desc'),  { textContent: desc });
+  Object.assign(document.getElementById('tt-meta'),  { textContent: `${d.units} units · ${d.level || 'undergrad/grad'}` });
+  document.getElementById('tooltip').style.opacity = '1';
+  moveTip(ev);
+}
+function moveTip(ev) {
+  const tt = document.getElementById('tooltip');
+  const x = Math.min(ev.clientX + 18, W() - 300);
+  const y = Math.min(ev.clientY - 10, H() - 220);
+  tt.style.left = x + 'px'; tt.style.top = y + 'px';
+}
+function hideTip() { document.getElementById('tooltip').style.opacity = '0'; }
+
+// ── Search ───────────────────────────────────────────────────────────────
+async function search(query) {
+  const btn = document.getElementById('search-btn');
+  btn.classList.add('loading');
+  btn.textContent = '…';
+  try {
+    const res = await fetch('/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, n: 8 }),
+    });
+    const { courses } = await res.json();
+    render(courses);
+  } finally {
+    btn.classList.remove('loading');
+    btn.textContent = '↵';
+  }
+}
+
+const input = document.getElementById('search-input');
+const btn   = document.getElementById('search-btn');
+btn.addEventListener('click', () => { if (input.value.trim()) search(input.value.trim()); });
+input.addEventListener('keydown', e => { if (e.key === 'Enter' && input.value.trim()) search(input.value.trim()); });
+input.focus();
+
+window.addEventListener('resize', () => svg.attr('viewBox', `0 0 ${W()} ${H()}`));
+</script>
+</body>
+</html>
