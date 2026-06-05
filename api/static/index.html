@@ -406,7 +406,25 @@ function startSelected(id) {
   const relIds = new Set([...prereqDepths.keys(), ...selSuccIds]);
   selRelEdges  = edges.filter(e => relIds.has(e.source.id) && relIds.has(e.target.id));
 
-  nodes.forEach(n => { n.fx = null; n.fy = null; });
+  // Scatter incoming prereq/succ nodes so each selection visibly re-settles.
+  // Background nodes stay put; only the nodes that need to move get displaced.
+  nodes.forEach(n => {
+    n.fx = null; n.fy = null;
+    const d = prereqDepths.get(n.id);
+    if (d !== undefined && d > 0) {
+      // Place near the target x column but with randomised y
+      const tx = W / 2 - Math.min(d * 200, W * 0.44);
+      n.x = tx + (Math.random() - 0.5) * 140;
+      n.y = H / 2 + (Math.random() - 0.5) * H * 0.65;
+    } else if (selSuccIds.has(n.id)) {
+      n.x = W / 2 + 200 + Math.random() * 120;
+      n.y = H / 2 + (Math.random() - 0.5) * H * 0.55;
+    }
+  });
+
+  // Snap selected node to centre immediately (visible on first frame)
+  selected.x  = W / 2;
+  selected.y  = H / 2;
   selected.fx = W / 2;
   selected.fy = H / 2;
   resetZoom();
