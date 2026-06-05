@@ -307,7 +307,7 @@ function startSearch(results) {
     }, W/2, H/2).strength(n => searchScores[n.id] > 0 ? 0.9 : 0.07))
     .force('charge', d3.forceManyBody()
       .strength(n => searchScores[n.id] > 0 ? -70 : -1))
-    .force('coll',   d3.forceCollide(n => searchScores[n.id] > 0 ? 28 : 3.5)
+    .force('coll',   d3.forceCollide(n => searchScores[n.id] > 0 ? 50 : 3.5)
       .strength(0.8))
     .alphaDecay(0.016)
     .on('tick', tick);
@@ -358,8 +358,8 @@ function startSelected(id) {
     .force('charge', d3.forceManyBody().strength(n =>
       n === selected || selPrereqIds.has(n.id) || selSuccIds.has(n.id) ? -130 : -1))
     .force('coll',   d3.forceCollide(n =>
-      n === selected ? 52 :
-      selPrereqIds.has(n.id) || selSuccIds.has(n.id) ? 30 : 4))
+      n === selected ? 68 :
+      selPrereqIds.has(n.id) || selSuccIds.has(n.id) ? 52 : 4))
     .alphaDecay(0.02)
     .on('tick', tick);
 
@@ -374,14 +374,13 @@ function startSelected(id) {
 
 function nodeR(n) {
   if (VIEW === 'SELECTED') {
-    if (n === selected)                return 20;
-    if (selPrereqIds.has(n.id))        return 11;
-    if (selSuccIds.has(n.id))          return 11;
+    if (n === selected)                          return 26;
+    if (selPrereqIds.has(n.id) || selSuccIds.has(n.id)) return 20;
     return 2.5;
   }
   if (VIEW === 'SEARCH') {
     const s = searchScores[n.id] ?? 0;
-    return s > 0 ? 5 + s * 11 : 2.5;
+    return s > 0 ? 18 + s * 8 : 2.5;   // 18–26px — tall enough for two text lines
   }
   return 3;
 }
