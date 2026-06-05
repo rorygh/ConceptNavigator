@@ -1079,8 +1079,13 @@ async function doSearch(q) {
   }).then(r => r.json());
   const { courses, scores, intent } = data;
   if (intent?.action === 'filter') {
-    // Use all matching IDs from backend (not just top-n)
-    applyFilter(data.filter_ids?.length ? data.filter_ids : courses.map(c => c.id), intent);
+    if (VIEW === 'SEARCH' && searchTopics.length > 0) {
+      // Stay in search: re-filter existing results with the new constraints
+      await applyFilterObj(intent.filters);
+    } else {
+      // No active search — apply as a galaxy overlay
+      applyFilter(data.filter_ids?.length ? data.filter_ids : courses.map(c => c.id), intent);
+    }
   } else {
     filterHitIds = new Set();
     activeFilters = null;
