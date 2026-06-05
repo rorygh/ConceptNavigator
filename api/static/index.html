@@ -1210,10 +1210,17 @@ async function removeFilterChip(key) {
   await applyFilterObj(f);
 }
 
+function hasActiveFilters(f) {
+  return !!(f?.level || f?.depts?.length || f?.max_units != null ||
+    f?.min_rating != null || f?.has_prereqs != null ||
+    f?.instructors?.length || f?.exclude_keywords?.length || f?.requires_courses?.length);
+}
+
 // Unified re-filter: routes to /api/refilter (search mode) or /api/filter (galaxy/selected).
 async function applyFilterObj(f) {
-  setHint(VIEW === 'SEARCH' ? 'Searching…' : 'Filtering…');
   if (VIEW === 'SEARCH' && searchTopics.length > 0) {
+    // Stay in search: re-run with updated (possibly empty) filters
+    setHint('Searching…');
     const data = await fetch('/api/refilter', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ topics: searchTopics, filters: f, n: 20 }),
@@ -1222,7 +1229,17 @@ async function applyFilterObj(f) {
       action: 'search', topics: searchTopics, filters: f,
       explanation: `${data.courses.length} courses matched`,
     });
+  } else if (!hasActiveFilters(f)) {
+    // All chips removed in non-search mode — clear filter overlay entirely,
+    // restoring default SELECTED ghosting / full GALAXY view.
+    filterHitIds = new Set();
+    activeFilters = null;
+    intentTagsEl.innerHTML = '';
+    filterPanelEl.hidden = true;
+    setHint(null);
+    draw();
   } else {
+    setHint('Filtering…');
     const data = await fetch('/api/filter', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ filters: f }),
