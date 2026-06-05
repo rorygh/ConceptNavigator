@@ -81,12 +81,28 @@ python -m ingest.embed_courses   # embed → ChromaDB + precompute similarity ma
 
 `embed_courses.py` also writes `data/similarity.npy` — the all-pairs cosine similarity matrix computed once at ingestion so `/api/similar` lookups are O(1) at runtime.
 
+## Environment variables
+
+All runtime variables use a `RUNPOD_` prefix and should be set as system environment variables (e.g. in RunPod's environment variable panel, or `export` in your shell for local dev). No `.env` file is used.
+
+| Variable | Required | Description |
+|---|---|---|
+| `RUNPOD_ANTHROPIC_API_KEY` | Yes | Anthropic API key — used by the LLM intent extraction layer |
+| `RUNPOD_GITHUB_TOKEN` | Deployment | GitHub PAT (repo:read scope) — used by `setup.sh` to clone the repo on pod start |
+
+GitHub Actions secrets (set in repo Settings → Secrets):
+
+| Secret | Description |
+|---|---|
+| `DOCKERHUB_USERNAME` | Docker Hub username — used by the push workflow |
+| `DOCKERHUB_TOKEN` | Docker Hub access token — used by the push workflow |
+
 ## Local development
 
 ```bash
 pip install uv
 uv pip install --system -r requirements.txt
-export ANTHROPIC_API_KEY=sk-ant-...
+export RUNPOD_ANTHROPIC_API_KEY=sk-ant-...
 uvicorn api.main:app --reload
 # open http://localhost:8000
 ```
@@ -103,14 +119,3 @@ docker push rorygh/conceptatlas:latest
 Or trigger the **Push Docker Image** GitHub Actions workflow from the Actions tab (manual dispatch). Requires `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` secrets set in the repo.
 
 First-time setup on pod: run `/setup.sh` then `cd /workspace/ConceptAtlas`.
-
-## Environment variables
-
-| Variable | Required | Description |
-|---|---|---|
-| `ANTHROPIC_API_KEY` | Yes | Anthropic API key — used by the LLM intent extraction layer |
-| `RUNPOD_GITHUB_TOKEN` | Deployment | GitHub PAT (repo:read scope) — used by `setup.sh` to clone the repo on pod start |
-| `DOCKERHUB_USERNAME` | CI | Docker Hub username — GitHub Actions secret for the push workflow |
-| `DOCKERHUB_TOKEN` | CI | Docker Hub access token — GitHub Actions secret for the push workflow |
-
-Copy `.env.example` to `.env` and fill in `ANTHROPIC_API_KEY` for local development.

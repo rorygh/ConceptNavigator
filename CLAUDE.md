@@ -134,7 +134,7 @@ Key behaviours:
 
 ```bash
 pip install -r requirements.txt
-# Set ANTHROPIC_API_KEY in environment
+# export RUNPOD_ANTHROPIC_API_KEY=sk-ant-...
 python -m ingest.embed_courses   # only needed once (or after data changes)
 uvicorn api.main:app --reload
 ```

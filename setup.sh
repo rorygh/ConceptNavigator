@@ -21,4 +21,4 @@ echo "==> Installing dependencies..."
 uv pip install --system --no-cache -r requirements.txt
 
 echo "==> Done. cd $DEST"
-echo "==> Next: set ANTHROPIC_API_KEY, then run the ingest pipeline."
+echo "==> Next: ensure RUNPOD_ANTHROPIC_API_KEY is set, then run the ingest pipeline."

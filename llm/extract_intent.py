@@ -1,4 +1,5 @@
 """Parse a free-text learning query into structured LearningIntent using Claude."""
+import os
 import anthropic
 from .schema import Filters, LearningIntent
 
@@ -8,7 +9,7 @@ _client: anthropic.Anthropic | None = None
 def _get_client() -> anthropic.Anthropic:
     global _client
     if _client is None:
-        _client = anthropic.Anthropic()
+        _client = anthropic.Anthropic(api_key=os.environ["RUNPOD_ANTHROPIC_API_KEY"])
     return _client
 
 
