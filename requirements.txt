@@ -2,10 +2,9 @@ anthropic
 sentence-transformers
 transformers<5          # transformers 5.x requires torch>=2.5; pin to 4.x for torch 2.4 compat
 chromadb
-networkx
+numpy
 fastapi
 uvicorn[standard]
 pydantic
 requests
-beautifulsoup4
 python-dotenv

@@ -15,7 +15,7 @@ def _fmt(course: dict) -> str:
 
 
 def main():
-    print("KnowledgeAtlas search — type a learning goal, or 'q' to quit.\n")
+    print("ConceptAtlas search — type a learning goal, or 'q' to quit.\n")
     print("Loading model (first run may take a few seconds)...")
 
     # Warm up the model before the loop so the first query is fast.

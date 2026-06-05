@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-KnowledgeAtlas is an AI-powered learning discovery engine.
+ConceptAtlas is an AI-powered learning discovery engine.
 
 Given a topic a user wants to learn (e.g. "robotics", "computer vision", "self-driving cars"), the system retrieves relevant university courses, expands prerequisite relationships, and visualises them as an interactive force-directed graph.
 
@@ -63,7 +63,7 @@ Course:
 
 ### LLM Layer
 
-`llm/` implements structured intent extraction using Claude (`claude-opus-4-8`).
+`llm/` implements structured intent extraction using Claude (`claude-haiku-4-5`).
 
 `extract_intent(query)` → `LearningIntent`:
 

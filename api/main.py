@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 STATIC      = Path(__file__).parent / "static"
@@ -255,10 +255,4 @@ def similar_courses(course_id: str):
     }
 
 
-@app.get("/favicon.svg")
-def favicon():
-    return FileResponse(STATIC / "favicon.svg", media_type="image/svg+xml")
-
-@app.get("/")
-def index():
-    return FileResponse(STATIC / "index.html")
+app.mount("/", StaticFiles(directory=STATIC, html=True), name="static")

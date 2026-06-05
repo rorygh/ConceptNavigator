@@ -1,6 +1,6 @@
-# ConceptNavigator
+# ConceptAtlas
 
-AI-powered learning discovery engine. Type a learning goal, and KnowledgeAtlas surfaces relevant MIT courses, expands prerequisite chains, and organises everything into an interactive force-directed graph.
+AI-powered learning discovery engine. Type a learning goal, and ConceptAtlas surfaces relevant MIT courses, expands prerequisite chains, and organises everything into an interactive force-directed graph.
 
 Data source: MIT course catalog via the [FireRoad API](https://fireroad.mit.edu/reference/catalog) (~7,083 courses).
 
@@ -52,7 +52,8 @@ ConceptNavigator/
 ├── api/
 │   ├── main.py            # FastAPI routes
 │   └── static/
-│       └── index.html     # Single-page D3 visualisation
+│       ├── index.html     # Single-page app shell + CSS
+│       └── app.js         # D3 v7 force simulation
 └── data/
     ├── courses_raw.json   # Raw API response (7,083 courses)
     ├── courses.json       # Validated courses with parsed AND/OR prerequisite trees
@@ -83,18 +84,23 @@ python -m ingest.embed_courses   # embed → ChromaDB + precompute similarity ma
 ## Local development
 
 ```bash
-pip install -r requirements.txt
+pip install uv
+uv pip install --system -r requirements.txt
 export ANTHROPIC_API_KEY=sk-ant-...
 uvicorn api.main:app --reload
 # open http://localhost:8000
 ```
 
-## RunPod Deployment
+## Docker deployment
+
+Build and push manually:
 
 ```bash
-docker build --platform linux/amd64 -t rorygh/conceptnavigator:v1.0 .
-docker push rorygh/conceptnavigator:v1.0
+docker build --platform linux/amd64 -t rorygh/conceptatlas:latest .
+docker push rorygh/conceptatlas:latest
 ```
+
+Or trigger the **Push Docker Image** GitHub Actions workflow from the Actions tab (manual dispatch). Requires `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` secrets set in the repo.
 
 **Pod environment variables:**
 - `RUNPOD_GITHUB_TOKEN` — GitHub PAT (repo read scope)
