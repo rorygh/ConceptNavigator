@@ -37,7 +37,7 @@ Click any course to centre it with its full prerequisite graph and similarity ri
 ## Project structure
 
 ```
-ConceptNavigator/
+ConceptAtlas/
 ├── ingest/
 │   ├── fetch_mit.py       # Pulls all courses from FireRoad API → data/courses_raw.json
 │   ├── parse_courses.py   # Validates schema, parses prereq trees → data/courses.json
@@ -54,68 +54,70 @@ ConceptNavigator/
 │   └── static/
 │       ├── index.html     # Single-page app shell + CSS
 │       └── app.js         # D3 v7 force simulation
-└── data/
-    ├── courses_raw.json   # Raw API response (7,083 courses)
-    ├── courses.json       # Validated courses with parsed AND/OR prerequisite trees
-    ├── chroma/            # ChromaDB vector store (7,083 embeddings, 384-dim)
-    └── similarity.npy     # Precomputed all-pairs cosine similarity matrix (float16, ~100 MB)
+├── setup.sh               # One-time pod setup: clone + install deps
+├── ingest.sh              # Run the full ingestion pipeline
+├── start.sh               # Start the server
+└── data/                  # Generated at ingest time, not committed
+    ├── courses_raw.json
+    ├── courses.json
+    ├── chroma/
+    └── similarity.npy
 ```
 
 ## Views
 
 **Galaxy** — all 7,083 courses clustered by department. Scroll or drag to explore.
 
-**Search** — type a learning goal and press Enter. The LLM extracts topics and hard filters in one pass; matched courses radiate from centre. Filter constraints appear as removable chips below the search bar — removing a chip re-runs the search with relaxed constraints, no new LLM call needed. Use the `+` chip to add filters manually.
+**Search** — type a learning goal and press Enter. The LLM extracts topics and hard filters in one pass; matched courses radiate from centre. Filter constraints appear as removable chips below the search bar — removing a chip re-runs the search with relaxed constraints, no new LLM call needed.
 
 **Selected** — click any course to centre it. Prerequisites expand to the left (colour-coded by depth); successors to the right; all remaining courses arrange into similarity rings based on cosine distance. Hover before clicking to warm the similarity cache. Type a follow-up query to filter the background without leaving this view.
 
-## Data pipeline
-
-Run once after cloning (or after any data change):
-
-```bash
-python -m ingest.fetch_mit       # fetch raw catalog from FireRoad API
-python -m ingest.parse_courses   # validate schema + parse prerequisite trees
-python -m ingest.embed_courses   # embed → ChromaDB + precompute similarity matrix
-```
-
-`embed_courses.py` also writes `data/similarity.npy` — the all-pairs cosine similarity matrix computed once at ingestion so `/api/similar` lookups are O(1) at runtime.
-
 ## Environment variables
-
-All runtime variables use a `RUNPOD_` prefix and should be set as system environment variables (e.g. in RunPod's environment variable panel, or `export` in your shell for local dev). No `.env` file is used.
 
 | Variable | Required | Description |
 |---|---|---|
-| `RUNPOD_ANTHROPIC_API_KEY` | Yes | Anthropic API key — used by the LLM intent extraction layer |
-| `RUNPOD_GITHUB_TOKEN` | Deployment | GitHub PAT (repo:read scope) — used by `setup.sh` to clone the repo on pod start |
-
-GitHub Actions secrets (set in repo Settings → Secrets):
-
-| Secret | Description |
-|---|---|
-| `DOCKERHUB_USERNAME` | Docker Hub username — used by the push workflow |
-| `DOCKERHUB_TOKEN` | Docker Hub access token — used by the push workflow |
+| `ANTHROPIC_API_KEY` | Yes | Anthropic API key — used by the LLM intent extraction layer |
+| `RUNPOD_ANTHROPIC_API_KEY` | Alternative | Accepted as a fallback if `ANTHROPIC_API_KEY` is not set |
 
 ## Local development
 
 ```bash
-pip install uv
-uv pip install --system -r requirements.txt
-export RUNPOD_ANTHROPIC_API_KEY=sk-ant-...
+pip install -r requirements.txt
+export ANTHROPIC_API_KEY=sk-ant-...
+./ingest.sh
 uvicorn api.main:app --reload
 # open http://localhost:8000
 ```
 
-## Docker deployment
+## Deploying to Railway
+
+1. Connect the GitHub repo in the Railway dashboard
+2. Set `ANTHROPIC_API_KEY` in the Railway environment variables panel
+3. Deploy — Railway detects the `Dockerfile` automatically
+
+The ingest pipeline runs during the Docker build, so the image is fully self-contained and startup is instant. Build takes ~2 minutes on first run.
+
+## Deploying to RunPod
+
+Use `Dockerfile.runpod` (the GitHub Actions workflow handles this automatically via the **Push Docker Image** dispatch).
+
+First-time pod setup:
+
+```bash
+/setup.sh          # clone repo + install deps
+./ingest.sh        # build data artifacts (~60s)
+./start.sh         # start the server on port 8000
+```
+
+Set `ANTHROPIC_API_KEY` (or `RUNPOD_ANTHROPIC_API_KEY`) in the pod's environment variable panel before starting.
+
+### Docker Hub
 
 Build and push manually:
 
 ```bash
-docker build --platform linux/amd64 -t rorygh/conceptatlas:latest .
+docker build --platform linux/amd64 -f Dockerfile.runpod -t rorygh/conceptatlas:latest .
 docker push rorygh/conceptatlas:latest
 ```
 
-Or trigger the **Push Docker Image** GitHub Actions workflow from the Actions tab (manual dispatch). Requires `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` secrets set in the repo.
-
-First-time setup on pod: run `/setup.sh` then `cd /workspace/ConceptAtlas`.
+Or trigger the **Push Docker Image** GitHub Actions workflow from the Actions tab. Requires `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` secrets set in the repo.
