@@ -119,9 +119,9 @@ def extract_intent(query: str) -> LearningIntent:
     response = client.messages.create(
         model="claude-haiku-4-5",
         max_tokens=512,
-        system=_SYSTEM,
+        system=[{"type": "text", "text": _SYSTEM, "cache_control": {"type": "ephemeral"}}],
         messages=[{"role": "user", "content": query}],
-        tools=[_EXTRACT_TOOL],
+        tools=[{**_EXTRACT_TOOL, "cache_control": {"type": "ephemeral"}}],
         tool_choice={"type": "tool", "name": "extract_intent"},
     )
 

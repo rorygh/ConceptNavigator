@@ -24,19 +24,10 @@ def search_with_intent(query: str, n: int = 10) -> dict:
         raw_hits = len(candidates)
         filtered = apply_filters(candidates, intent.filters)[:n]
     else:
-        from retrieval.search import search as _vector_search
+        from retrieval.search import search_multi
 
-        # Search using each extracted topic and merge by rank (lower rank = better)
-        seen: dict[str, int] = {}
-        for topic in intent.topics:
-            for rank, course in enumerate(_vector_search(topic, n=n * 2)):
-                cid = course["id"]
-                if cid not in seen or rank < seen[cid]:
-                    seen[cid] = rank
-
-        _, _, courses_by_id = _load()
-        ordered = sorted(seen.items(), key=lambda x: x[1])
-        candidates = [courses_by_id[cid] for cid, _ in ordered if cid in courses_by_id]
+        # Embed all topics in a single batch call, then merge by rank.
+        candidates = search_multi(intent.topics, n=n * 2)
         raw_hits = len(candidates)
         filtered = apply_filters(candidates, intent.filters)[:n]
 

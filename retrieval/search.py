@@ -49,15 +49,26 @@ def _load_similarity_matrix() -> np.ndarray:
 
 
 def search(query: str, n: int = 5) -> list[dict]:
+    return search_multi([query], n=n)
+
+
+def search_multi(queries: list[str], n: int = 5) -> list[dict]:
+    """Embed all queries in one batch call, then merge results by rank."""
     model, collection, courses_by_id = _load()
 
-    vec = model.encode([query]).tolist()
-    results = collection.query(query_embeddings=vec, n_results=n * 3)
+    vecs = model.encode(queries).tolist()
+    results = collection.query(query_embeddings=vecs, n_results=n * 3)
 
-    # Deduplicate cross-listed courses by normalising the title.
+    # Merge results across all query vectors, keeping best rank per course.
     seen_titles: set[str] = set()
+    rank_by_id: dict[str, int] = {}
+    for query_ids in results["ids"]:
+        for rank, course_id in enumerate(query_ids):
+            if course_id not in rank_by_id or rank < rank_by_id[course_id]:
+                rank_by_id[course_id] = rank
+
     courses = []
-    for course_id in results["ids"][0]:
+    for course_id, _ in sorted(rank_by_id.items(), key=lambda x: x[1]):
         course = courses_by_id.get(course_id)
         if not course:
             continue
