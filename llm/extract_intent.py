@@ -28,9 +28,11 @@ Course ratings are on a 0–7 scale.
 Instructor names in the data are abbreviated (e.g. "J. Williams") — match by last name only.
 
 Decide between two actions:
-- "search": user wants to discover courses by topic/subject (use semantic vector search + filters)
-- "filter": user specifies concrete constraints with no open-ended topic \
-(e.g. "show courses by Williams", "list no-prereq EECS courses", "grad math under 9 units")
+- "search": user wants to discover courses by topic/subject — use this whenever the query names \
+any academic subject, field, or concept, even if it also includes constraints like level or prereqs \
+(e.g. "undergrad ML with no prereqs", "physics of stars", "grad robotics under 9 units")
+- "filter": user specifies ONLY hard constraints with no topic to discover \
+(e.g. "show courses by Williams", "list all no-prereq EECS courses", "grad math under 9 units")
 
 Extract topics (for search), hard constraints (level, dept, units, instructor, rating, \
 prereqs, excluded keywords), and which action to take.

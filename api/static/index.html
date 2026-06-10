@@ -30,9 +30,10 @@
     #logo {
       position: fixed; top: 20px; left: 22px; z-index: 10;
       font-size: 14px; font-weight: 700; letter-spacing: -0.02em;
-      color: var(--text); pointer-events: none; user-select: none;
+      color: var(--text); user-select: none; cursor: pointer;
       display: flex; align-items: center; gap: 6px;
     }
+    #logo:hover em { opacity: 0.75; }
     #logo em { color: var(--accent); font-style: normal; }
 
     /* ── Hint pill ── */
@@ -125,6 +126,24 @@
     .d-none   { font-size: 13px; color: var(--muted); }
     #d-prereqs-expr { font-size: 11.5px; font-family: monospace; color: var(--muted);
                       margin-top: 7px; line-height: 1.5; display: none; }
+
+    /* ── Sample query suggestions (shown above search bar when input is empty) ── */
+    #suggestions {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      justify-content: center;
+      padding: 0 4px 10px;
+      transition: opacity 0.2s;
+    }
+    #suggestions.hidden { opacity: 0; pointer-events: none; }
+    .sq {
+      font-size: 12px; color: var(--muted);
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 20px; padding: 4px 12px;
+      cursor: pointer; user-select: none;
+      transition: border-color 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+    .sq:hover { border-color: var(--accent); color: var(--accent); }
 
     /* ── Intent tags (LLM-extracted topics, shown below search bar) ── */
     #intent-tags {
@@ -242,6 +261,12 @@
 </div>
 
 <div id="search-wrap">
+  <div id="suggestions">
+    <span class="sq">physics of stars and galaxies</span>
+    <span class="sq">machine learning, no prerequisites</span>
+    <span class="sq">how does the brain learn?</span>
+    <span class="sq">grad-level robotics</span>
+  </div>
   <div id="search-inner">
     <svg id="search-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
       <circle cx="9" cy="9" r="6"/><path d="M15 15l3 3" stroke-linecap="round"/>

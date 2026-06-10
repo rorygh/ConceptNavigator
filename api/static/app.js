@@ -794,6 +794,7 @@ function applyFilter(filterIds, intent) {
 
 async function doSearch(q) {
   searchInput.blur();
+  suggestionsEl.classList.add('hidden');
   setHint('Searching…');
   intentTagsEl.innerHTML = '';
   const data = await fetch('/api/search', {
@@ -817,8 +818,30 @@ async function doSearch(q) {
 
 searchInput.addEventListener('keydown', e => {
   if (e.key === 'Enter' && searchInput.value.trim()) doSearch(searchInput.value.trim());
-  if (e.key === 'Escape') { searchInput.value = ''; startGalaxy(); }
+  if (e.key === 'Escape') goHome();
 });
+
+// ── Sample query suggestions + home ────────────────────────────
+const suggestionsEl = document.getElementById('suggestions');
+
+function goHome() {
+  searchInput.value = '';
+  suggestionsEl.classList.remove('hidden');
+  startGalaxy();
+}
+
+searchInput.addEventListener('input', () => {
+  suggestionsEl.classList.toggle('hidden', searchInput.value.trim().length > 0);
+});
+
+suggestionsEl.addEventListener('click', e => {
+  const chip = e.target.closest('.sq');
+  if (!chip) return;
+  searchInput.value = chip.textContent.trim();
+  doSearch(searchInput.value);
+});
+
+document.getElementById('logo').addEventListener('click', goHome);
 
 
 // ═══════════════════════════════════════════════════════════════

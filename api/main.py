@@ -1,4 +1,5 @@
 import json
+import time
 import numpy as np
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -163,19 +164,34 @@ def search(req: SearchRequest):
     from retrieval.search import _load, _load_embeddings
     from llm.filters import apply_filters
 
+    t0 = time.perf_counter()
     model, _, courses_by_id = _load()
     all_ids, E, _ = _load_embeddings()
+    t_load = time.perf_counter()
 
     result = search_with_intent(req.query, n=req.n)
     intent = result["intent"]
     top_courses = result["courses"]
+    t_llm = time.perf_counter()
 
     # Score every course: embed each extracted topic, take the max cosine similarity.
     # Falls back to embedding the raw query when no topics were extracted (filter-only queries).
     terms = intent.topics if intent.topics else [req.query]
     topic_vecs = model.encode(terms, normalize_embeddings=True).astype(np.float32)
+    t_encode = time.perf_counter()
     # shape: (num_courses,) — best match across all topics
     raw_scores = (E @ topic_vecs.T).max(axis=1).tolist()
+    t_matmul = time.perf_counter()
+
+    print(
+        f"[search] query={req.query!r:.60} | "
+        f"load={1000*(t_load-t0):.0f}ms "
+        f"llm={1000*(t_llm-t_load):.0f}ms "
+        f"encode={1000*(t_encode-t_llm):.0f}ms "
+        f"matmul={1000*(t_matmul-t_encode):.0f}ms "
+        f"total={1000*(t_matmul-t0):.0f}ms",
+        flush=True,
+    )
 
     # For filter action: return ALL matching IDs so the frontend can highlight every match,
     # not just the top-n truncation.
